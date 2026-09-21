@@ -1,0 +1,15 @@
+# Saved Facebook login/session data. Never commit this folder.
+browser-profile/
+
+# Generated CSV exports.
+exports/
+
+# Python-generated files and local environments.
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Windows-generated files.
+Thumbs.db
+Desktop.ini

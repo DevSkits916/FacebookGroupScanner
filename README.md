@@ -13,6 +13,20 @@ Duplicate group URLs are removed. CSV files use UTF-8 with a byte-order mark so 
 
 Facebook does not provide a credential-free public Groups search JSON endpoint. This app therefore uses Playwright with Google Chrome or Microsoft Edge already installed on your computer. No Facebook API credentials are required.
 
+## Windows executable
+
+Download `FacebookGroupScanner-1.0.0.exe` from the GitHub Releases page, place it in a writable folder, and double-click it. Python is not required. Google Chrome or Microsoft Edge must be installed.
+
+The executable opens the same terminal menu for repeated searches and combined CSV exports. Its `exports` and `browser-profile` folders are stored beside the executable. Place it in the existing scanner folder to reuse your saved searches and login.
+
+To build the executable from source in PowerShell:
+
+```powershell
+.\build.ps1
+```
+
+The build installs dependencies into `.venv` and writes the executable into `dist`.
+
 ## Windows setup and usage
 
 1. Install Python 3 from <https://www.python.org/downloads/windows/> if needed. Select **Add Python to PATH** during setup.

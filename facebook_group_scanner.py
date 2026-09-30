@@ -25,7 +25,11 @@ from playwright.sync_api import (
 )
 
 
-PROJECT_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = (
+    Path(sys.executable).resolve().parent
+    if getattr(sys, "frozen", False)
+    else Path(__file__).resolve().parent
+)
 EXPORT_DIR = PROJECT_DIR / "exports"
 PROFILE_DIR = PROJECT_DIR / "browser-profile"
 SEARCH_URL = "https://www.facebook.com/groups/search/groups_home/?q={}"

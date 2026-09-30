@@ -13,3 +13,8 @@ venv/
 # Windows-generated files.
 Thumbs.db
 Desktop.ini
+
+# Windows packaging output.
+build/
+dist/
+*.spec

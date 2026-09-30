@@ -25,9 +25,11 @@ cd %USERPROFILE%\Documents\FacebookGroupScanner\
 run.bat
 ```
 
-5. Enter the search keyword.
-6. Enter the maximum number of groups, from 1 to 500.
-7. On the first run, log in to Facebook normally in the browser window. Return to the terminal and press Enter after login finishes.
+5. Choose **1. Search for a keyword**, then enter a keyword and the maximum number of groups (1 to 500 per search).
+6. Repeat option **1** for as many different keywords as you need. Each completed search is saved automatically.
+7. Choose **2. Export all scanned groups to one CSV** to save every collected group, with duplicate URLs removed. This includes previous searches saved in the exports folder, which are loaded when the app starts.
+8. Choose **3. Exit** when finished.
+9. On the first run, log in to Facebook normally in the browser window. Return to the terminal and press Enter after login finishes.
 
 The program displays progress and prints the completed CSV's full path. Exports are saved in:
 
@@ -49,13 +51,13 @@ Do not share the `browser-profile` folder because it can contain your saved Face
 
 ## How the scan works
 
-The scanner opens Facebook's Groups search page, reads visible group-result cards, scrolls gradually with randomized short delays, and stops when it reaches the requested count or no new groups appear. It detects common login, network, and temporary-rate-limit errors and exits cleanly instead of repeatedly hammering Facebook.
+The scanner opens Facebook's Groups search page, reads visible group-result cards, scrolls gradually with randomized short delays, and stops when it reaches the requested count or no new groups appear. It detects common login, network, and temporary-rate-limit errors and returns to the menu so earlier collected results can still be exported. The browser closes after each search; the saved profile retains your login for the next search.
 
 Facebook changes its page structure regularly. The scanner only reads each result's group name and URL.
 
 ## Optional command-line mode
 
-The normal workflow prompts for both values. They can also be supplied directly:
+Running without `--keyword` opens the repeated-search menu. Supplying `--keyword` keeps the single-search workflow and exports that search automatically:
 
 ```bat
 py -3 facebook_group_scanner.py --keyword gardening --max-results 25

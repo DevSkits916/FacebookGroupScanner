@@ -305,9 +305,87 @@ def scan_facebook(keyword: str, maximum: int, skip_login_wait: bool) -> list[dic
             context.close()
 
 
+def merge_groups(
+    collected: dict[str, dict[str, str]], rows: list[dict[str, str]]
+) -> int:
+    before = len(collected)
+    for row in rows:
+        url = canonical_group_url(row.get("url", ""))
+        name = clean_text(row.get("group_name", ""))
+        if url and name:
+            collected.setdefault(url.casefold(), {"group_name": name, "url": url})
+    return len(collected) - before
+
+
+def load_saved_groups() -> dict[str, dict[str, str]]:
+    collected: dict[str, dict[str, str]] = {}
+    for path in sorted(EXPORT_DIR.glob("facebook_groups_*.csv")):
+        try:
+            with path.open("r", encoding="utf-8-sig", newline="") as handle:
+                reader = csv.DictReader(handle)
+                if not set(CSV_COLUMNS).issubset(reader.fieldnames or []):
+                    print(f"  Skipping CSV with unsupported columns: {path.name}")
+                    continue
+                merge_groups(collected, list(reader))
+        except (OSError, UnicodeError, csv.Error) as exc:
+            print(f"  Could not load {path.name}: {exc}", file=sys.stderr)
+    return collected
+
+
+def interactive_menu(args: argparse.Namespace) -> int:
+    collected = load_saved_groups()
+    print(f"\nFacebook Group Scanner — {len(collected)} saved unique groups loaded.")
+    while True:
+        print(f"\nCollected groups: {len(collected)}")
+        print("1. Search for a keyword")
+        print("2. Export all scanned groups to one CSV")
+        print("3. Exit")
+        try:
+            choice = input("Choose an option (1-3): ").strip()
+            if choice == "3":
+                return 0
+            if choice == "2":
+                if not collected:
+                    print("No groups collected yet. Run a search first.")
+                    continue
+                try:
+                    output = export_csv(list(collected.values()), "all_searches")
+                    print(f"Exported {len(collected)} unique groups.\nCSV file: {output}")
+                except OSError as exc:
+                    print(f"ERROR: Could not write the CSV: {exc}", file=sys.stderr)
+                continue
+            if choice != "1":
+                print("Please choose 1, 2, or 3.")
+                continue
+            keyword = prompt_keyword()
+            maximum = args.max_results or prompt_maximum()
+            try:
+                rows = scan_facebook(keyword, maximum, args.skip_login_wait)
+            except (FacebookScannerError, PlaywrightError, OSError) as exc:
+                print(f"ERROR: {exc}", file=sys.stderr)
+                print("Previous results are still available from the export menu.")
+                continue
+            if not rows:
+                print("No matching groups were found.")
+                continue
+            added = merge_groups(collected, rows)
+            print(f"Search found {len(rows)} groups; {added} new groups added.")
+            try:
+                output = export_csv(rows, keyword)
+                print(f"Search results saved: {output}")
+            except OSError as exc:
+                print(f"ERROR: Could not save this search: {exc}", file=sys.stderr)
+                print("Results remain in this session. Use option 2 to retry saving.")
+        except KeyboardInterrupt:
+            print("\nCancelled. Returning to the menu; collected groups are retained.")
+        except EOFError:
+            print("\nInput closed. Exiting scanner.")
+            return 0
+
+
 def filename_for(keyword: str) -> str:
     slug = re.sub(r"[^A-Za-z0-9]+", "_", keyword).strip("_")[:50] or "search"
-    return f"facebook_groups_{slug}_{datetime.now():%Y%m%d_%H%M%S}.csv"
+    return f"facebook_groups_{slug}_{datetime.now():%Y%m%d_%H%M%S_%f}.csv"
 
 
 def export_csv(rows: list[dict[str, str]], keyword: str) -> Path:
@@ -349,7 +427,7 @@ def prompt_maximum() -> int:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--keyword", help="Search keyword (otherwise prompted)")
+    parser.add_argument("--keyword", help="Run a single search and export (otherwise open the menu)")
     parser.add_argument("--max-results", type=positive_int, help="Maximum groups (1-500)")
     parser.add_argument(
         "--skip-login-wait",
@@ -361,7 +439,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    keyword = (args.keyword or "").strip() or prompt_keyword()
+    if not (args.keyword or "").strip():
+        return interactive_menu(args)
+    keyword = args.keyword.strip()
     maximum = args.max_results or prompt_maximum()
     print(f'\nSearching for Facebook groups matching "{keyword}" (up to {maximum})...')
     try:
